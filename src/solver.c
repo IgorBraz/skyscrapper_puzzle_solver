@@ -2,6 +2,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <unistd.h>
+#include <stdio.h>
 
 typedef struct game
 {
@@ -53,13 +54,32 @@ int is_valid_game()
     return 1;
 }
 
-void initialize_board_nodes(Node node_board[], int board_size)
+void destroy_board(Node node_board[], int board_size)
 {
     for (int i = 0; i < board_size; i++)
     {
         node_board[i].value = 0;
-        node_board[i].options = NULL;
+        free(node_board[i].options);
     }
+}
+
+int initialize_board_nodes(Node node_board[], int board_size)
+{
+    for (int i = 0; i < board_size; i++)
+    {
+        node_board[i].value = 0;
+        node_board[i].options = (char *)calloc(GAME.size + 1, sizeof(char));
+        if (!node_board[i].options)
+        {
+            printf("Can't allocate memory for board options at index %d.", i);
+            for (i; i >= 0; --i)
+                free(node_board[i].options);
+            return 0;
+        }
+        node_board[i].options[0] = 0;
+    }
+
+    return 1;
 }
 
 int get_adjacent_node_index(char cardinal_point[], int game_index, int game_size)
@@ -74,11 +94,28 @@ int get_adjacent_node_index(char cardinal_point[], int game_index, int game_size
         return game_size * (game_size - (game_index + 1));
 }
 
+void set_node_value(Node node_board[], int node_index, char node_value)
+{
+    node_board[node_index].value = node_value;
+    node_board[node_index].options[0] = '\0';
+}
+
+void set_all_node_options(Node node_board[], int node_index)
+{
+    for (int i = 0; i < GAME.size; i++)
+    {
+        node_board[node_index].options[i] = (i + 1) + '0';
+
+        if (i == GAME.size - 1)
+            node_board[node_index].options[i + 1] = 0;
+    }
+}
+
 void set_column_values_from_north(Node node_board[], int node_index)
 {
     for (int i = 0; i < GAME.size; i++)
     {
-        node_board[node_index].value = (i + 1) + '0';
+        set_node_value(node_board, node_index, (i + 1) + '0');
         node_index += GAME.size;
     }
 }
@@ -87,7 +124,7 @@ void set_line_values_from_east(Node node_board[], int node_index)
 {
     for (int i = 0; i < GAME.size; i++)
     {
-        node_board[node_index].value = (i + 1) + '0';
+        set_node_value(node_board, node_index, (i + 1) + '0');
         node_index -= 1;
     }
 }
@@ -96,7 +133,7 @@ void set_column_values_from_south(Node node_board[], int node_index)
 {
     for (int i = 0; i < GAME.size; i++)
     {
-        node_board[node_index].value = (i + 1) + '0';
+        set_node_value(node_board, node_index, (i + 1) + '0');
         node_index -= GAME.size;
     }
 }
@@ -105,14 +142,29 @@ void set_line_values_from_west(Node node_board[], int node_index)
 {
     for (int i = 0; i < GAME.size; i++)
     {
-        node_board[node_index].value = (i + 1) + '0';
+        set_node_value(node_board, node_index, (i + 1) + '0');
         node_index += 1;
+    }
+}
+
+void set_interior_node_options(Node node_board[], int board_size)
+{
+    int line_moves = GAME.size - 2;
+    int node_index = 0;
+
+    for (int i = GAME.size; i < board_size - GAME.size; i += GAME.size)
+    {
+        for (int j = 0; j < line_moves; j++)
+        {
+            strcpy(node_board[i + j + 1].options, "1234");
+        }
     }
 }
 
 void guess_from_clues(Node node_board[], int board_size)
 {
     char game_size_char = GAME.size + '0';
+    char game_last_index_char = (game_size_char - '1') + '0';
     int game_index = 0;
     int node_index = 0;
 
@@ -122,39 +174,76 @@ void guess_from_clues(Node node_board[], int board_size)
         {
             game_index = i;
             node_index = get_adjacent_node_index("north", game_index, GAME.size);
+
             if (GAME.north[game_index] == '1')
-                node_board[node_index].value = game_size_char;
+                set_node_value(node_board, node_index, game_size_char);
             else if (GAME.north[game_index] == game_size_char)
                 set_column_values_from_north(node_board, node_index);
+            else if (GAME.north[game_index] == game_last_index_char)
+                for (int i = 0; i < GAME.size / 2; i++)
+                    node_board[node_index].options[i] = (i + 1) + '0';
+            else if (!node_board[node_index].value)
+                set_all_node_options(node_board, node_index);
         }
         else if (i < 8)
         {
             game_index = i - GAME.size;
             node_index = get_adjacent_node_index("east", game_index, GAME.size);
+
             if (GAME.east[game_index] == '1')
-                node_board[node_index].value = game_size_char;
+                set_node_value(node_board, node_index, game_size_char);
             else if (GAME.east[game_index] == game_size_char)
                 set_line_values_from_east(node_board, node_index);
+            else if (GAME.east[game_index] == game_last_index_char)
+                for (int i = 0; i < GAME.size / 2; i++)
+                    node_board[node_index].options[i] = (i + 1) + '0';
+            else if (!node_board[node_index].value)
+                set_all_node_options(node_board, node_index);
         }
         else if (i < 12)
         {
             game_index = i - (GAME.size * 2);
             node_index = get_adjacent_node_index("south", game_index, GAME.size);
+
             if (GAME.south[game_index] == '1')
-                node_board[node_index].value = game_size_char;
+                set_node_value(node_board, node_index, game_size_char);
             else if (GAME.south[game_index] == game_size_char)
                 set_column_values_from_south(node_board, node_index);
+            else if (GAME.south[game_index] == game_last_index_char)
+                for (int i = 0; i < GAME.size / 2; i++)
+                    node_board[node_index].options[i] = (i + 1) + '0';
+            else if (!node_board[node_index].value)
+                set_all_node_options(node_board, node_index);
         }
         else if (i < 16)
         {
             game_index = i - (GAME.size * 3);
             node_index = get_adjacent_node_index("west", game_index, GAME.size);
+
             if (GAME.west[game_index] == '1')
-                node_board[node_index].value = game_size_char;
+                set_node_value(node_board, node_index, game_size_char);
             else if (GAME.west[game_index] == game_size_char)
                 set_line_values_from_west(node_board, node_index);
+            else if (GAME.west[game_index] == game_last_index_char)
+                for (int i = 0; i < GAME.size / 2; i++)
+                    node_board[node_index].options[i] = (i + 1) + '0';
+            else if (!node_board[node_index].value)
+                set_all_node_options(node_board, node_index);
         }
     }
+
+    set_interior_node_options(node_board, board_size);
+}
+
+int finished(Node node_board[], int board_size)
+{
+    for (int i = 0; i < board_size; i++)
+    {
+        if (!node_board[i].value)
+            return 0;
+    }
+
+    return 1;
 }
 
 void print_board_line(Node node_board[], int node_index)
@@ -203,9 +292,19 @@ void solve(char **constraints)
     int board_size = GAME.size * GAME.size;
     Node node_board[board_size];
 
-    initialize_board_nodes(node_board, board_size);
+    if (!initialize_board_nodes(node_board, board_size))
+    {
+        return;
+    }
 
     guess_from_clues(node_board, board_size);
 
+    while (!finished(node_board, board_size))
+    {
+        break;
+    }
+
     print(node_board, board_size);
+
+    destroy_board(node_board, board_size);
 }
