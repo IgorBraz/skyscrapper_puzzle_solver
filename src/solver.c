@@ -153,12 +153,9 @@ void set_interior_node_options(Node node_board[], int board_size)
     int node_index = 0;
 
     for (int i = GAME.size; i < board_size - GAME.size; i += GAME.size)
-    {
         for (int j = 0; j < line_moves; j++)
-        {
-            strcpy(node_board[i + j + 1].options, "1234");
-        }
-    }
+            for (int k = 0; k < GAME.size; k++)
+                node_board[i + j + 1].options[k] = (k + 1) + '0';
 }
 
 void guess_from_clues(Node node_board[], int board_size)
