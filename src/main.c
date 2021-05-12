@@ -1,8 +1,8 @@
-void solve(char **constraints);
+#include "game.h"
 
 int main(int argc, char **argv)
 {
     argv++;
     solve(argv);
-    return 0;
+    return 1;
 }
