@@ -234,6 +234,16 @@ void get_column_indexes(int node_index, int board_size, int *column_indexes)
     }
 }
 
+void remove_option(Node node, int option_index)
+{
+    int this_index = option_index;
+
+    for (int next_index = option_index + 1; next_index <= GAME.size; next_index++)
+    {
+        node.options[this_index++] = node.options[next_index];
+    }
+}
+
 void eliminate_options(Node board[], Node node, int node_index, int *indexes)
 {
     int line_index;
@@ -253,7 +263,12 @@ void eliminate_options(Node board[], Node node, int node_index, int *indexes)
         {
             if (line_value == node.options[j])
             {
-                node.options[j] = '!';
+                remove_option(node, j);
+
+                if (strlen(node.options) == 1)
+                {
+                    set_node_value(board, node_index, node.options[0]);
+                }
             }
         }
     }
