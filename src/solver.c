@@ -78,39 +78,28 @@ void set_all_node_options(Node node_board[], int node_index)
     }
 }
 
-void set_column_values_from_north(Node node_board[], int node_index)
+void set_node_values_from_direction(Node node_board[], int node_index, char *direction_description)
 {
     for (int i = 0; i < GAME.size; i++)
     {
         set_node_value(node_board, node_index, (i + 1) + '0');
-        node_index += GAME.size;
-    }
-}
 
-void set_line_values_from_east(Node node_board[], int node_index)
-{
-    for (int i = 0; i < GAME.size; i++)
-    {
-        set_node_value(node_board, node_index, (i + 1) + '0');
-        node_index -= 1;
-    }
-}
-
-void set_column_values_from_south(Node node_board[], int node_index)
-{
-    for (int i = 0; i < GAME.size; i++)
-    {
-        set_node_value(node_board, node_index, (i + 1) + '0');
-        node_index -= GAME.size;
-    }
-}
-
-void set_line_values_from_west(Node node_board[], int node_index)
-{
-    for (int i = 0; i < GAME.size; i++)
-    {
-        set_node_value(node_board, node_index, (i + 1) + '0');
-        node_index += 1;
+        if (direction_description == "north")
+        {
+            node_index += GAME.size;
+        }
+        else if (direction_description == "east")
+        {
+            node_index -= 1;
+        }
+        else if (direction_description == "south")
+        {
+            node_index -= GAME.size;
+        }
+        else if (direction_description == "west")
+        {
+            node_index += 1;
+        }
     }
 }
 
@@ -131,118 +120,65 @@ void set_interior_node_options(Node node_board[], int board_size)
     }
 }
 
-void guess_from_clues(Node node_board[], int board_size)
+void set_values_from_clues(Node board[], char *direction_description, char *directions, int board_index)
+{
+    char game_size_char = GAME.size + '0';
+    char game_last_index_char = (game_size_char - '1') + '0';
+    int adjacent_node_index = get_adjacent_node_index(direction_description, board_index, GAME.size);
+
+    if (directions[board_index] == '1')
+    {
+        set_node_value(board, adjacent_node_index, game_size_char);
+    }
+    else if (directions[board_index] == game_size_char)
+    {
+        set_node_values_from_direction(board, adjacent_node_index, direction_description);
+    }
+    else if (directions[board_index] == game_last_index_char)
+    {
+        for (int i = 0; i < GAME.size / 2; i++)
+        {
+            board[adjacent_node_index].options[i] = (i + 1) + '0';
+        }
+    }
+    else if (!board[adjacent_node_index].value)
+    {
+        set_all_node_options(board, adjacent_node_index);
+    }
+}
+
+void guess_from_clues(Node board[], int board_size)
 {
     char game_size_char = GAME.size + '0';
     char game_last_index_char = (game_size_char - '1') + '0';
     int game_index = 0;
-    int node_index = 0;
+    int adjacent_node_index = 0;
 
     for (int i = 0; i < board_size; i++)
     {
-        if (i < 4)
+        if (i < GAME.size)
         {
             game_index = i;
-            node_index = get_adjacent_node_index("north", game_index, GAME.size);
-
-            if (GAME.north[game_index] == '1')
-            {
-                set_node_value(node_board, node_index, game_size_char);
-            }
-            else if (GAME.north[game_index] == game_size_char)
-            {
-                set_column_values_from_north(node_board, node_index);
-            }
-            else if (GAME.north[game_index] == game_last_index_char)
-            {
-                for (int i = 0; i < GAME.size / 2; i++)
-                {
-                    node_board[node_index].options[i] = (i + 1) + '0';
-                }
-            }
-            else if (!node_board[node_index].value)
-            {
-                set_all_node_options(node_board, node_index);
-            }
+            set_values_from_clues(board, "north", GAME.north, game_index);
         }
-        else if (i < 8)
+        else if (i < GAME.size * 2)
         {
             game_index = i - GAME.size;
-            node_index = get_adjacent_node_index("east", game_index, GAME.size);
-
-            if (GAME.east[game_index] == '1')
-            {
-                set_node_value(node_board, node_index, game_size_char);
-            }
-            else if (GAME.east[game_index] == game_size_char)
-            {
-                set_line_values_from_east(node_board, node_index);
-            }
-            else if (GAME.east[game_index] == game_last_index_char)
-            {
-                for (int i = 0; i < GAME.size / 2; i++)
-                {
-                    node_board[node_index].options[i] = (i + 1) + '0';
-                }
-            }
-            else if (!node_board[node_index].value)
-            {
-                set_all_node_options(node_board, node_index);
-            }
+            set_values_from_clues(board, "south", GAME.south, game_index);
         }
-        else if (i < 12)
+        else if (i < GAME.size * 3)
         {
             game_index = i - (GAME.size * 2);
-            node_index = get_adjacent_node_index("south", game_index, GAME.size);
-
-            if (GAME.south[game_index] == '1')
-            {
-                set_node_value(node_board, node_index, game_size_char);
-            }
-            else if (GAME.south[game_index] == game_size_char)
-            {
-                set_column_values_from_south(node_board, node_index);
-            }
-            else if (GAME.south[game_index] == game_last_index_char)
-            {
-                for (int i = 0; i < GAME.size / 2; i++)
-                {
-                    node_board[node_index].options[i] = (i + 1) + '0';
-                }
-            }
-            else if (!node_board[node_index].value)
-            {
-                set_all_node_options(node_board, node_index);
-            }
+            set_values_from_clues(board, "east", GAME.east, game_index);
         }
-        else if (i < 16)
+        else if (i < GAME.size * 4)
         {
             game_index = i - (GAME.size * 3);
-            node_index = get_adjacent_node_index("west", game_index, GAME.size);
-
-            if (GAME.west[game_index] == '1')
-            {
-                set_node_value(node_board, node_index, game_size_char);
-            }
-            else if (GAME.west[game_index] == game_size_char)
-            {
-                set_line_values_from_west(node_board, node_index);
-            }
-            else if (GAME.west[game_index] == game_last_index_char)
-            {
-                for (int i = 0; i < GAME.size / 2; i++)
-                {
-                    node_board[node_index].options[i] = (i + 1) + '0';
-                }
-            }
-            else if (!node_board[node_index].value)
-            {
-                set_all_node_options(node_board, node_index);
-            }
+            set_values_from_clues(board, "west", GAME.west, game_index);
         }
     }
 
-    set_interior_node_options(node_board, board_size);
+    set_interior_node_options(board, board_size);
 }
 
 int solved(Node node_board[], int board_size)
