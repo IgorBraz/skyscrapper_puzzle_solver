@@ -347,10 +347,18 @@ void solve(char **constraints)
 
     guess_from_clues(node_board, board_size);
 
+    int tries = 0;
+
     while (!solved(node_board, board_size))
     {
         propagate_constraints(node_board, board_size);
-        break;
+
+        tries++;
+
+        if (tries > 2)
+        {
+            break;
+        }
     }
 
     print_board(GAME, node_board, board_size);
