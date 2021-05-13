@@ -244,34 +244,64 @@ void remove_option(Node node, int option_index)
     }
 }
 
+void remove_all_claimed_options(Node board[], Node node, char compare_node_value, int node_index)
+{
+    for (int j = 0; j < GAME.size; j++)
+    {
+        if (compare_node_value == node.options[j])
+        {
+            remove_option(node, j);
+
+            if (strlen(node.options) == 1)
+            {
+                set_node_value(board, node_index, node.options[0]);
+            }
+        }
+    }
+}
+
 void eliminate_options(Node board[], Node node, int node_index, int *indexes)
 {
-    int line_index;
-    char line_value;
+    int compare_node_index;
+    char compare_node_value;
+    char *previous_node_options = (char *)calloc(GAME.size + 1, sizeof(char));
+    int repeating_options_counter = 0;
 
     for (int i = 0; i < GAME.size; i++)
     {
-        line_index = indexes[i];
-        line_value = board[line_index].value;
+        compare_node_index = indexes[i];
 
-        if (!line_value || node_index == line_index)
+        if (node_index == compare_node_index)
         {
             continue;
         }
 
-        for (int j = 0; j < GAME.size; j++)
-        {
-            if (line_value == node.options[j])
-            {
-                remove_option(node, j);
+        compare_node_value = board[compare_node_index].value;
 
-                if (strlen(node.options) == 1)
-                {
-                    set_node_value(board, node_index, node.options[0]);
-                }
+        if (board[compare_node_index].options[0] != '\0')
+        {
+            if (strlen(board[compare_node_index].options) == 2 && strcmp(previous_node_options, board[compare_node_index].options) == 0)
+            {
+                repeating_options_counter++;
             }
+
+            strcpy(previous_node_options, board[compare_node_index].options);
         }
+
+        if (repeating_options_counter == GAME.size - 3)
+        {
+            remove_all_claimed_options(board, node, board[compare_node_index].options[0], node_index);
+        }
+
+        if (!compare_node_value)
+        {
+            continue;
+        }
+
+        remove_all_claimed_options(board, node, compare_node_value, node_index);
     }
+
+    free(previous_node_options);
 }
 
 void propagate_constraints(Node board[], int board_size)
