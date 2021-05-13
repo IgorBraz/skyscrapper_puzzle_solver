@@ -258,6 +258,91 @@ int solved(Node node_board[], int board_size)
     return 1;
 }
 
+void get_line_indexes(int node_index, int board_size, int *line_indexes)
+{
+    int line_start_index;
+
+    if (node_index > GAME.size)
+    {
+        line_start_index = node_index - (node_index % GAME.size);
+    }
+    else
+    {
+        line_start_index = 0;
+    }
+
+    for (int i = 0; i < GAME.size; i++)
+    {
+        line_indexes[i] = line_start_index;
+        line_start_index++;
+    }
+}
+
+void get_column_indexes(int node_index, int board_size, int *column_indexes)
+{
+    int column_start_index;
+
+    if (node_index > GAME.size)
+    {
+        column_start_index = node_index % GAME.size;
+    }
+    else
+    {
+        column_start_index = node_index;
+    }
+
+    for (int i = 0; i < GAME.size; i++)
+    {
+        column_indexes[i] = column_start_index;
+        column_start_index += GAME.size;
+    }
+}
+
+void eliminate_options(Node board[], Node node, int node_index, int *indexes)
+{
+    int line_index;
+    char line_value;
+
+    for (int i = 0; i < GAME.size; i++)
+    {
+        line_index = indexes[i];
+        line_value = board[line_index].value;
+
+        if (!line_value || node_index == line_index)
+        {
+            continue;
+        }
+
+        for (int j = 0; j < GAME.size; j++)
+        {
+            if (line_value == node.options[j])
+            {
+                node.options[j] = '!';
+            }
+        }
+    }
+}
+
+void propagate_constraints(Node board[], int board_size)
+{
+    int line_indexes[GAME.size];
+    int column_indexes[GAME.size];
+
+    for (int node_index = 0; node_index < board_size; node_index++)
+    {
+        if (board[node_index].value)
+        {
+            continue;
+        }
+
+        get_line_indexes(node_index, board_size, line_indexes);
+        get_column_indexes(node_index, board_size, column_indexes);
+
+        eliminate_options(board, board[node_index], node_index, line_indexes);
+        eliminate_options(board, board[node_index], node_index, column_indexes);
+    }
+}
+
 void solve(char **constraints)
 {
     GAME.size = strlen(constraints[0]);
@@ -283,6 +368,7 @@ void solve(char **constraints)
 
     while (!solved(node_board, board_size))
     {
+        propagate_constraints(node_board, board_size);
         break;
     }
 
